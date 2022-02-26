@@ -53,7 +53,7 @@
           {//simulation costants but not in the global scope
           vec2 res = resolution;
           float t = 1.0;
-          float dA = 0.71;
+          float dA = .71;
           float dB = 0.14;
           float f = 0.055 ;
           float k = 0.066;
@@ -69,8 +69,8 @@
   
           float resA = clamp(newA, 0.0, 1.0);
           float resB = clamp(newB, 0.0, 1.0);
-  
-          color = vec4( texture( uSampler, gl_FragCoord.xy).r, resB, resA, texture( uSampler, gl_FragCoord.xy).a );
+          vec4 lastColor = texture( uSampler, gl_FragCoord.xy);
+          color = vec4( lastColor.r, resB, resA, lastColor.a );
       }
     </script>
 
@@ -144,8 +144,10 @@
       if(lookLocation.y < 0.0){
         lookLocation.y += 1.0;
       }
+      float greenValue = texture( uSampler,  lookLocation).g;
+      float redValue = texture( uSampler,  lookLocation).r;
 
-      return texture( uSampler,  lookLocation).g;
+      return greenValue * 0.2 + redValue;
     }
     void main() {
       float _time = time;
@@ -221,7 +223,7 @@
     out vec4 o_frag;
     void main() {
         vec4 backroundColor = texture( uSampler, ( gl_FragCoord.xy) / resolution );
-        o_frag = vec4( 1.0,backroundColor.g , backroundColor.b, 0.25 );
+        o_frag = vec4( 0.9 ,backroundColor.g + 0.01, backroundColor.b, 0.25 );
     } 
   </script>
 
@@ -232,7 +234,7 @@
         textureBack, textureFront, framebuffer,
         copyProgram, simulationProgram, quad,
         dimensions = { width:null, height:null },
-        agentCount = 1000000, ddProgram,ddPosition,PANE_PARMAS,
+        agentCount = 5000000, ddProgram,ddPosition,PANE_PARMAS,
         distGraph
 
     window.onload = function() {

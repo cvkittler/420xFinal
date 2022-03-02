@@ -138,31 +138,16 @@
     // dir - heading of agent
     // angle - direction to sense, in radians
     // distance - distance to sense
-    float readSensor( vec2 pos, vec2 dir, float angle, vec2 distance, float _time) {
+    float readSensor( vec2 pos, vec2 dir, float angle, vec2 distance, float _time, float _senseGreenWeight) {
       vec2 newangle  = rotate( dir, angle  );
       vec2 offset = newangle * distance;
       vec2 lookLocation = pos + offset;
 
-      // sense wrap around
-      if(lookLocation.x > 1.0){
-        lookLocation.x -= 1.0;
-      }
-      if(lookLocation.x < 0.0){
-        lookLocation.x += 1.0;
-      }
-      if(lookLocation.y > 1.0){
-        lookLocation.y -= 1.0;
-      }
-      if(lookLocation.y < 0.0){
-        lookLocation.y += 1.0;
-      }
       float greenValue = texture( uSampler,  lookLocation).g;
       float redValue = texture( uSampler,  lookLocation).r;
-      if (invertGreen){
-          greenValue = greenValue * ((step(mod(_time, invertGreenPeriod), invertGreenPeriod / 2.) * 2.) - 1.);
-      }
-      return greenValue * senseGreenWeight + redValue * senseRedWeight;
+      return greenValue * _senseGreenWeight + redValue * senseRedWeight;
     }
+
     void main() {
       float _time = time;
       float invertGreenPeriod = invertGreenPeriod;
@@ -174,11 +159,20 @@
 
       // normalize our {-1,1} vertex coordinates to {0,1} for texture lookups
       vec2 pos = (1. + a_pos.xy) / 2.;
-    
+      
+      
+      float _senseGreenWeight = senseGreenWeight;
+      if (invertGreen){
+        float remainder = mod(_time, invertGreenPeriod);
+        float halfPeriod = invertGreenPeriod / 2.;
+        float conditional = (remainder < halfPeriod) ? -1. : 1.;
+        _senseGreenWeight = _senseGreenWeight * conditional;
+      }
+
       // read sensor informatino at different angles
-      float left     = readSensor( pos, a_pos.zw, -RAD_DEGREE_COEFF * 45., sensorDistance, _time );
-      float forward  = readSensor( pos, a_pos.zw, 0.,    sensorDistance, _time );
-      float right    = readSensor( pos, a_pos.zw, RAD_DEGREE_COEFF * 45.5,  sensorDistance, _time );
+      float left     = readSensor( pos, a_pos.zw, -RAD_DEGREE_COEFF * 45., sensorDistance, _time, _senseGreenWeight);
+      float forward  = readSensor( pos, a_pos.zw, 0.,    sensorDistance, _time, _senseGreenWeight );
+      float right    = readSensor( pos, a_pos.zw, RAD_DEGREE_COEFF * 45.5,  sensorDistance, _time, _senseGreenWeight );
       
       // initialize feedback transform output
       o_vpos = a_pos;
@@ -283,8 +277,8 @@
           agentAlpha: 0.25,
           periodAlpha: 500,
           weightAlpha: .10,
-          senseRedWeight: 1,
-          senseGreenWeight: -0.5,
+          senseRedWeight: .2,
+          senseGreenWeight: 1,
           invertGreen: true,
           invertGreenPeriod: 1000,
 
